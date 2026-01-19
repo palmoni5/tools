@@ -12,7 +12,8 @@ turndownService.addRule('absoluteImages', {
         if (src && !src.startsWith('http')) {
             try {
                 // ה-API מחזיר כתובות יחסיות, לכן נשתמש במיקום הנוכחי כבסיס
-                src = new URL(src, location.origin).href;
+                const baseUrl = location.href.split('/topic/')[0];
+                src = new URL(src, baseUrl).href;
             } catch (e) {
                 console.error("Could not create absolute URL for image:", src, e);
             }
@@ -43,8 +44,10 @@ turndownService.addRule('userMentions', {
  * פונקציה ראשית לאיסוף ועיבוד השרשור דרך ה-API
  */
 async function fetchAndProcessThread() {
+    // חישוב כתובת הבסיס לתמיכה בפורומים המותקנים בתתי-תיקיות
+    const baseUrl = location.href.split('/topic/')[0];
+
     // שלב 1: חילוץ מזהה השרשור (TID) וכותרת
-    // --- התיקון כאן: שינוי const ל-let ---
     let tid = window.ajaxify?.data?.tid;
     let title = window.ajaxify?.data?.title;
 
@@ -65,7 +68,7 @@ async function fetchAndProcessThread() {
 
 
     // שלב 2: קבלת מידע על מספר העמודים בשרשור
-    const paginationResponse = await fetch(`${location.origin}/api/topic/pagination/${tid}`);
+    const paginationResponse = await fetch(`${baseUrl}/api/topic/pagination/${tid}`);
     if (!paginationResponse.ok) throw new Error(`שגיאה בקבלת מידע על עמודים: ${paginationResponse.statusText}`);
     const paginationData = await paginationResponse.json();
     const pageCount = paginationData.pagination.pageCount;
@@ -74,7 +77,7 @@ async function fetchAndProcessThread() {
     const pagePromises = [];
     for (let i = 1; i <= pageCount; i++) {
         pagePromises.push(
-            fetch(`${location.origin}/api/topic/${tid}?page=${i}`).then(res => {
+            fetch(`${baseUrl}/api/topic/${tid}?page=${i}`).then(res => {
                 if (!res.ok) throw new Error(`שגיאה בטעינת עמוד ${i}`);
                 return res.json();
             })
